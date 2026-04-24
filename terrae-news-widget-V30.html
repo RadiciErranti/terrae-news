@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>TERRAE Film Fest — News</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --ink: #0a0a0a;
+    --ink-2: #1a1a1a;
+    --muted: #6b6b66;
+    --rule: #e6e4dd;
+    --accent: oklch(0.68 0.17 35);
+    --gap: 24px;
+    --radius: 4px;
+    --visible: 4;
+    --dur: 480ms;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .section { padding: 36px 32px 64px; max-width: 1440px; margin: 0 auto; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--ink); color: #fff;
+    padding: 10px 22px; border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+    border: 0; cursor: pointer;
+  }
+  .pill:hover { background: var(--ink-2); }
+
+  .nav-arrows { display: flex; gap: 10px; }
+  .arrow {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--ink); background: transparent;
+    display: grid; place-items: center; cursor: pointer; color: var(--ink);
+    transition: background var(--dur), color var(--dur), opacity var(--dur);
+  }
+  .arrow:hover { background: var(--ink); color: #fff; }
+  .arrow:disabled { opacity: 0.25; cursor: not-allowed; }
+  .arrow svg { width: 16px; height: 16px; }
+
+  .rule { height: 1px; background: var(--ink); margin-bottom: 28px; }
+
+  .viewport { overflow: hidden; }
+  .track {
+    display: grid; grid-auto-flow: column;
+    grid-auto-columns: calc((100% - (var(--visible) - 1) * var(--gap)) / var(--visible));
+    gap: var(--gap);
+    transition: transform var(--dur) cubic-bezier(.5,.05,.2,1);
+    will-change: transform;
+  }
+
+  .card { display: flex; flex-direction: column; gap: 14px; }
+  .thumb {
+    aspect-ratio: 4 / 3; background: #ddd;
+    border-radius: var(--radius); overflow: hidden; position: relative;
+  }
+  .thumb svg, .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .thumb .badge {
+    position: absolute; bottom: 10px; left: 10px;
+    background: rgba(10,10,10,0.85); color: #fff;
+    font: 500 11px/1 'JetBrains Mono', monospace;
+    padding: 5px 8px; border-radius: 2px; letter-spacing: 0.04em;
+  }
+  .thumb .date-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(10,10,10,0.85); color: #fff;
+    font: 500 10px/1 'JetBrains Mono', monospace;
+    padding: 4px 7px; border-radius: 2px; letter-spacing: 0.04em;
+  }
+  .card .kicker {
+    font: 500 11px/1 'Inter', sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .card .title { font-size: 16px; line-height: 1.35; margin: 0; text-wrap: pretty; }
+  .card .title b { font-weight: 700; }
+  .card .excerpt { font-size: 13px; line-height: 1.55; color: var(--muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .title a { color: inherit; text-decoration: none; }
+  .card .title a:hover b { text-decoration: underline; }
+  .actions { display: flex; gap: 6px; margin-top: 2px; }
+  .icon-btn {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center; border: 0; cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--accent); }
+  .icon-btn svg { width: 10px; height: 10px; }
+
+  .section-foot { margin-top: 40px; }
+
+  .loading { text-align: center; color: var(--muted); padding: 80px 0; font: 500 13px/1 'JetBrains Mono', monospace; }
+  .error { text-align: center; color: #c00; padding: 40px 0; font: 500 13px/1 'JetBrains Mono', monospace; }
+
+  @media (max-width: 1100px) { :root { --visible: 3; } }
+  @media (max-width: 800px) { :root { --visible: 2; --gap: 16px; } .section { padding: 24px 20px 48px; } }
+  @media (max-width: 520px) { :root { --visible: 1; } }
+</style>
+</head>
+<body>
+
+<main>
+  <section class="section">
+    <div class="section-head">
+      <button class="pill" type="button">News</button>
+      <div class="nav-arrows">
+        <button class="arrow" id="prev" type="button" aria-label="Precedente" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button class="arrow" id="next" type="button" aria-label="Successivo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="rule"></div>
+
+    <div class="viewport">
+      <div class="track" id="track">
+        <div class="loading">Caricamento news…</div>
+      </div>
+    </div>
+
+    <div class="section-foot">
+      <button class="pill" type="button">Vedi tutte le news</button>
+    </div>
+  </section>
+</main>
+
+<script>
+  // ╔══════════════════════════════════════════════════════╗
+  // ║  TERRAE Film Fest — Carosello News da Google Sheets  ║
+  // ║  Colonne: A=Titolo B=Data C=Estratto D=ImmagineURL   ║
+  // ║           E=LinkPagina F=Tag G=Pubblicato(si/no)     ║
+  // ╚══════════════════════════════════════════════════════╝
+
+  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDBZDIqRs45Z9AN3Ta276DRqm11xZfYBwNpuEY0e4_3EVvKCwCkLYe0fOU6QOkGH2jpcYJYHuOtfQE/pub?gid=1277597420&single=true&output=csv';
+
+  // Pattern SVG placeholder se non c'è immagine
+  const HUES = [18, 130, 28, 210, 280, 60, 160, 340];
+  const PATTERNS = ['diag', 'grid', 'dots'];
+
+  function placeholderSVG(hue, pattern) {
+    const bg = `oklch(0.78 0.06 ${hue})`;
+    const fg = `oklch(0.55 0.08 ${hue})`;
+    let pat = '';
+    if (pattern === 'diag')
+      pat = `<pattern id="p" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="${bg}"/><line x1="0" y1="0" x2="0" y2="14" stroke="${fg}" stroke-width="6"/></pattern>`;
+    else if (pattern === 'grid')
+      pat = `<pattern id="p" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="${bg}"/><path d="M20 0H0v20" stroke="${fg}" stroke-width="1" fill="none"/></pattern>`;
+    else
+      pat = `<pattern id="p" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="${bg}"/><circle cx="8" cy="8" r="2.2" fill="${fg}"/></pattern>`;
+    return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>${pat}</defs><rect width="400" height="300" fill="url(#p)"/></svg>`;
+  }
+
+  // Parser CSV robusto
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], cell = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"' && text[i+1] === '"') { cell += '"'; i++; }
+        else if (c === '"') inQ = false;
+        else cell += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ',') { row.push(cell); cell = ''; }
+        else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+        else if (c === '\r') {}
+        else cell += c;
+      }
+    }
+    if (cell.length || row.length) { row.push(cell); rows.push(row); }
+    return rows;
+  }
+
+  function csvToNews(text) {
+    const rows = parseCSV(text).filter(r => r.some(c => c.trim() !== ''));
+    // Righe 1-3 sono intestazione/istruzioni, dati da riga 4 (index 3)
+    // Ma gestiamo sia il caso con header che senza cercando la prima riga dati valida
+    // La struttura è: A=Titolo B=Data C=Estratto D=ImgURL E=Link F=Tag G=Pubblicato
+    const news = [];
+    let dataStart = 0;
+
+    // Trova la prima riga con "Titolo" o salta le righe di intestazione
+    for (let i = 0; i < Math.min(rows.length, 5); i++) {
+      const r = rows[i];
+      const joined = r.join('').toLowerCase();
+      if (joined.includes('titolo') || joined.includes('title')) {
+        dataStart = i + 1;
+        break;
+      }
+      // Se la riga 4 (index 3) sembra dati reali
+      if (i === 3 && r[0] && r[0].trim().length > 3) {
+        dataStart = 3;
+        break;
+      }
+    }
+    if (dataStart === 0) dataStart = 4; // fallback: salta prime 4 righe
+
+    rows.slice(dataStart).forEach((r, idx) => {
+      const titolo     = (r[0] || '').trim();
+      const data       = (r[1] || '').trim();
+      const estratto   = (r[2] || '').trim();
+      const immagine   = (r[3] || '').trim();
+      const link       = (r[4] || '').trim();
+      const tag        = (r[5] || '').trim();
+      const pubblicato = (r[6] || '').trim().toLowerCase();
+
+      if (!titolo) return;
+      if (pubblicato !== 'si' && pubblicato !== 'sì') return;
+
+      news.push({
+        titolo, data, estratto, immagine, link, tag,
+        hue: HUES[idx % HUES.length],
+        pattern: PATTERNS[idx % PATTERNS.length],
+      });
+    });
+    return news;
+  }
+
+  // Rendering
+  const track = document.getElementById('track');
+  let NEWS = [];
+
+  function renderCards() {
+    track.innerHTML = '';
+    if (NEWS.length === 0) {
+      track.innerHTML = '<div class="error">Nessuna news pubblicata trovata.</div>';
+      return;
+    }
+    NEWS.forEach(n => {
+      const el = document.createElement('article');
+      el.className = 'card';
+
+      const thumbInner = n.immagine
+        ? `<img src="${n.immagine}" alt="${n.titolo}" loading="lazy"/>`
+        : placeholderSVG(n.hue, n.pattern);
+
+      const tagBadge = n.tag ? `<span class="badge">${n.tag}</span>` : '';
+      const dateBadge = n.data ? `<span class="date-badge">${n.data}</span>` : '';
+
+      const titleHTML = n.link
+        ? `<a href="${n.link}" target="_blank" rel="noopener"><b>${n.titolo}</b></a>`
+        : `<b>${n.titolo}</b>`;
+
+      const estrattoHTML = n.estratto
+        ? `<p class="excerpt">${n.estratto}</p>`
+        : '';
+
+      el.innerHTML = `
+        <div class="thumb">
+          ${thumbInner}
+          ${tagBadge}
+          ${dateBadge}
+        </div>
+        <div class="kicker">News</div>
+        <h3 class="title">${titleHTML}</h3>
+        ${estrattoHTML}
+        <div class="actions">
+          <button class="icon-btn" aria-label="Condividi" onclick="navigator.share ? navigator.share({title:'${n.titolo.replace(/'/g,"\\'")}',url:'${n.link}'}) : navigator.clipboard.writeText('${n.link}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+          </button>
+          ${n.link ? `<button class="icon-btn" aria-label="Apri" onclick="window.open('${n.link}','_blank')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </button>` : ''}
+        </div>
+      `;
+      track.appendChild(el);
+    });
+  }
+
+  async function loadNews() {
+    try {
+      const res = await fetch(SHEET_CSV_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      NEWS = csvToNews(text);
+    } catch (e) {
+      console.error('Errore caricamento sheet:', e);
+      track.innerHTML = `<div class="error">Errore nel caricamento delle news.<br><small>${e.message}</small></div>`;
+      return false;
+    }
+    return true;
+  }
+
+  // Navigazione carosello
+  let index = 0;
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+
+  function visibleCount() {
+    return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--visible')) || 4;
+  }
+  function maxIndex() {
+    return Math.max(0, NEWS.length - visibleCount());
+  }
+  function update() {
+    const max = maxIndex();
+    if (index > max) index = max;
+    if (index < 0) index = 0;
+    const v = visibleCount();
+    track.style.transform = `translateX(calc(${-index} * ((100% + var(--gap)) / ${v})))`;
+    prev.disabled = index <= 0;
+    next.disabled = index >= max;
+  }
+
+  prev.addEventListener('click', () => { index--; update(); });
+  next.addEventListener('click', () => { index++; update(); });
+  window.addEventListener('resize', update);
+
+  // Avvio
+  loadNews().then(ok => {
+    if (ok) { renderCards(); update(); }
+  });
+</script>
+
+</body>
+</html>
