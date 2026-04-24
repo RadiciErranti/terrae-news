@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERRAE News</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+  /*Aut Grotesk deve essere caricato tramite il tuo hosting o licenza */
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ocra: #C8973A;
+    --text: #0a0a0a;
+    --muted: #888;
+    --border: #d8d8d8;
+    --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body {
+    background: transparent;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER BAR ── */
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+  }
+
+  .bar-label {
+    background: var(--text);
+    color: #fff;
+    font-family: 'Neue Haas Grotesk', 'Aut Grotesk', 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    width: 100px;
+    height: 40px;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bar-arrows {
+    display: flex;
+    gap: 8px;
+  }
+
+  .arrow-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition);
+  }
+
+  .arrow-btn:hover { background: var(--text); }
+  .arrow-btn:hover svg { stroke: #fff; }
+  .arrow-btn:disabled { opacity: 0.22; cursor: default; }
+
+  .arrow-btn svg {
+    width: 13px; height: 13px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+    transition: stroke var(--transition);
+  }
+
+  /* ── TRACK ── */
+  .track-outer {
+    overflow: hidden;
+    padding: 0 10px;
+  }
+
+  .track {
+    display: flex;
+    transition: transform var(--transition);
+    will-change: transform;
+  }
+
+  /* ── CARD ── */
+  .card {
+    flex: 0 0 25%;
+    border-right: none;
+    padding: 0;
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── IMAGE — uniform 4:3 rectangle ── */
+  .card-img-wrap {
+    width: calc(100% - 20px);
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    flex-shrink: 0;
+    margin: 20px 10px 20px 10px;
+  }
+
+  .card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card:hover .card-img { transform: scale(1.04); }
+
+  /* ── BODY ── */
+  .card-body {
+    padding: 14px 20px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 8px;
+  }
+
+
+
+  .card-headline {
+    font-family: 'Neue Haas Grotesk', 'Aut Grotesk', 'DM Sans', sans-serif;
+    font-size: 18px;
+    line-height: 25px;
+    color: var(--text);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .card-headline strong {
+    font-weight: 500;
+    display: block;
+  }
+
+  .card-headline .excerpt {
+    font-weight: 300;
+    color: #888;
+    font-size: 14px;
+    line-height: 20px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Pills */
+
+
+
+  .card-date {
+    font-family: 'Neue Haas Grotesk', 'Aut Grotesk', 'DM Sans', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .card-tag {
+    font-family: 'Neue Haas Grotesk', 'Aut Grotesk', 'DM Sans', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: block;
+  }
+
+  /* ── STATES ── */
+  .state-msg {
+    padding: 60px 28px;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .state-msg.error { color: #c0392b; }
+
+  .loader {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 1.5px solid #ddd;
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    .card { flex: 0 0 50%; }
+  }
+
+  @media (max-width: 540px) {
+    .card { flex: 0 0 85%; }
+    .bar { padding: 14px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="bar-label">News</span>
+  <div class="bar-arrows">
+    <button class="arrow-btn" id="prev" aria-label="Precedente">
+      <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 5 5 12 12 19"/></svg>
+    </button>
+    <button class="arrow-btn" id="next" aria-label="Successivo">
+      <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="track-outer">
+  <div class="track" id="track">
+    <div class="state-msg"><span class="loader"></span> Caricamento…</div>
+  </div>
+</div>
+
+<script>
+  // ══════════════════════════════════════════
+  //  CONFIGURA QUI
+  // ══════════════════════════════════════════
+  const SHEET_ID   = '16gaKN5vvNRYcnutzrDTiOWLOYyyufm6KlvQC5VCwL2I';
+  const SHEET_NAME = 'News';
+  // ══════════════════════════════════════════
+
+  const DEMO = [
+    { titolo: 'Annuncio della selezione ufficiale', estratto: 'I dodici documentari in concorso per la terza edizione del festival a Civitavecchia.', immagine: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=700&q=80', data: '22 aprile 2026', tag: 'Festival', link: '#', pub: 'si' },
+    { titolo: 'Premio TERRAE – Silvio Serangeli', estratto: 'Aperte le candidature al riconoscimento per il cinema del reale legato ai territori e alle comunità.', immagine: 'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=700&q=80', data: '15 aprile 2026', tag: 'Premio', link: '#', pub: 'si' },
+    { titolo: 'Archivio Paese', estratto: 'Nuove immagini dalla campagna di raccolta con Valentina Vannicola. Il catalogo sarà pubblicato entro l\'estate.', immagine: 'https://images.unsplash.com/photo-1500964757637-c85e8a162699?w=700&q=80', data: '8 aprile 2026', tag: 'Territorio', link: '#', pub: 'si' },
+    { titolo: 'LCC8 – Dossier al Ministero della Cultura', estratto: 'La domanda per il Laboratorio di Creatività Contemporanea è stata presentata entro la scadenza.', immagine: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=700&q=80', data: '1 aprile 2026', tag: 'Progetto', link: '#', pub: 'si' },
+    { titolo: 'Identità visiva TERRAE 2026', estratto: 'Il nuovo sistema grafico: poster, banner e palette per la terza edizione del festival.', immagine: 'https://images.unsplash.com/photo-1551038247-3d9af20df552?w=700&q=80', data: '22 marzo 2026', tag: 'Design', link: '#', pub: 'si' },
+  ];
+
+  const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+  let current = 0;
+
+  function cv(row, idx) {
+    return row.c[idx] && row.c[idx].v != null ? String(row.c[idx].v) : '';
+  }
+
+  function fmtDate(raw) {
+    if (!raw) return '';
+    const m = raw.match(/Date\((\d+),(\d+),(\d+)\)/);
+    if (m) return new Date(+m[1], +m[2], +m[3]).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+    return raw;
+  }
+
+  const FALLBACK = 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=700&q=80';
+
+  function cardHTML(n) {
+    const img     = n.immagine || FALLBACK;
+    const dateStr = n.data ? (n.data.includes('Date') ? fmtDate(n.data) : n.data) : '';
+    const tag     = n.tag || 'News';
+    const href    = n.link && n.link !== '#' ? n.link : null;
+
+    return `
+      <article class="card" style="cursor:${href ? 'pointer' : 'default'};" ${href ? `onclick="openLink('${href}')"` : ''}>
+        <div class="card-img-wrap">
+          <img class="card-img" src="${img}" alt="${n.titolo}" loading="lazy" onerror="this.src='${FALLBACK}'">
+        </div>
+        <div class="card-body">
+          <span class="card-tag">${tag}</span>
+          <div class="card-headline">
+            <strong>${n.titolo}</strong>
+            ${n.estratto ? `<span class="excerpt">${n.estratto}</span>` : ''}
+          </div>
+          <div class="card-footer">
+            ${dateStr ? `<time class="card-date">${dateStr}</time>` : ''}
+          </div>
+        </div>
+      </article>`;
+  }
+
+  function showError(msg) {
+    document.getElementById('track').innerHTML = `<div class="state-msg error">${msg}</div>`;
+  }
+
+  function renderCards(news) {
+    document.getElementById('track').innerHTML = news.map(cardHTML).join('');
+    initCarousel();
+  }
+
+  async function loadNews() {
+    if (SHEET_ID === 'INCOLLA_QUI_IL_TUO_SHEET_ID') { renderCards(DEMO); return; }
+    try {
+      const res  = await fetch(API_URL);
+      const text = await res.text();
+      const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+      const rows = json.table.rows;
+      if (!rows || !rows.length) { showError('Nessuna notizia trovata.'); return; }
+      const news = rows
+        .map(r => ({ titolo: cv(r,0), data: cv(r,1), estratto: cv(r,2), immagine: cv(r,3), link: cv(r,4), tag: cv(r,5), pub: cv(r,6) }))
+        .filter(n => n.pub && n.pub.toLowerCase() === 'si' && n.titolo);
+      if (!news.length) { showError('Nessuna notizia pubblicata.'); return; }
+      renderCards(news);
+    } catch(e) {
+      console.error(e);
+      showError('Errore nel caricamento. Controlla Sheet ID e visibilità pubblica.');
+    }
+  }
+
+  function initCarousel() {
+    const track = document.getElementById('track');
+    const prev  = document.getElementById('prev');
+    const next  = document.getElementById('next');
+    const cards = track.querySelectorAll('.card');
+    current = 0;
+
+    function pv() {
+      if (window.innerWidth <= 540) return 1;
+      if (window.innerWidth <= 960) return 2;
+      return 4;
+    }
+
+    function goTo(idx) {
+      const max = Math.max(0, cards.length - pv());
+      current   = Math.max(0, Math.min(idx, max));
+      const w   = cards[0] ? cards[0].offsetWidth : 0;
+      track.style.transform = `translateX(-${current * w}px)`;
+      prev.disabled = current === 0;
+      next.disabled = current >= max;
+    }
+
+    prev.addEventListener('click', () => goTo(current - 1));
+    next.addEventListener('click', () => goTo(current + 1));
+
+    let sx = 0;
+    track.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+    track.addEventListener('touchend',   e => {
+      const dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
+    });
+
+    window.addEventListener('resize', () => goTo(0));
+    goTo(0);
+  }
+
+
+  function openLink(url) {
+    if (!url || url === '#') return;
+    try { window.top.location.href = url; return; } catch(e) {}
+    try { window.parent.location.href = url; return; } catch(e) {}
+    window.open(url, '_blank');
+  }
+
+  loadNews();
+</script>
+</body>
+</html>
