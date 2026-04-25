@@ -103,6 +103,8 @@
     position: relative;
     flex-shrink: 0;
   }
+  .thumb a { display: block; width: 100%; height: 100%; }
+  .thumb a:hover { opacity: 0.9; }
   .thumb img, .thumb svg {
     display: block; width: 100%; height: 100%; object-fit: cover;
   }
@@ -134,16 +136,7 @@
     -webkit-box-orient: vertical; overflow: hidden;
   }
 
-  .actions { display: flex; gap: 5px; margin-top: 2px; }
-  .icon-btn {
-    width: 20px; height: 20px; border-radius: 50%;
-    background: var(--ink); color: #fff;
-    display: grid; place-items: center;
-    border: 0; cursor: pointer;
-    transition: background 200ms;
-  }
-  .icon-btn:hover { background: var(--accent); }
-  .icon-btn svg { width: 9px; height: 9px; }
+  /* actions removed */
 
   .section-foot { margin-top: 32px; }
 
@@ -282,23 +275,19 @@
       const thumb = n.immagine
         ? `<img src="${n.immagine}" alt="${n.titolo}" loading="lazy">`
         : placeholderSVG(n.hue, n.pattern);
+      const thumbWrap = n.link
+        ? `<a href="${n.link}" target="_blank" rel="noopener" style="display:block;text-decoration:none;">${thumb}</a>`
+        : thumb;
       el.innerHTML = `
         <div class="thumb">
-          ${thumb}
+          ${thumbWrap}
           ${n.tag  ? `<span class="badge">${n.tag}</span>` : ''}
           ${n.data ? `<span class="date-badge">${n.data}</span>` : ''}
         </div>
         <div class="kicker">News</div>
         <div class="title">${n.link ? `<a href="${n.link}" target="_blank" rel="noopener">${n.titolo}</a>` : n.titolo}</div>
         ${n.estratto ? `<div class="excerpt">${n.estratto}</div>` : ''}
-        <div class="actions">
-          <button class="icon-btn" aria-label="Condividi">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
-          </button>
-          ${n.link ? `<button class="icon-btn" aria-label="Apri" onclick="window.open('${n.link}','_blank')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-          </button>` : ''}
-        </div>`;
+`;
       track.appendChild(el);
     });
   }
