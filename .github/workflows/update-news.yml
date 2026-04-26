@@ -1,0 +1,76 @@
+name: Update news.json
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Substack feed and generate news.json
+        run: |
+          python3 << 'EOF'
+          import urllib.request, xml.etree.ElementTree as ET, json, re, html
+
+          FEED = 'https://terraefilmfest.substack.com/feed'
+
+          with urllib.request.urlopen(FEED, timeout=15) as r:
+              raw = r.read()
+
+          root = ET.fromstring(raw)
+
+          def clean(h, maxlen=120):
+              t = re.sub(r'<[^>]+>', ' ', h or '')
+              t = html.unescape(re.sub(r'\s+', ' ', t).strip())
+              return t[:maxlen].rsplit(' ', 1)[0] + '…' if len(t) > maxlen else t
+
+          def fmt_date(s):
+              from email.utils import parsedate_to_datetime
+              try:
+                  d = parsedate_to_datetime(s)
+                  return f"{d.day:02d} · {d.month:02d} · {d.year}"
+              except:
+                  return s or ''
+
+          def first_img(h):
+              m = re.search(r'<img[^>]+src=["\'](http[^"\']+)["\']', h or '')
+              return m.group(1) if m else ''
+
+          items = []
+          for item in root.findall('.//item'):
+              g = lambda t: (item.findtext(t) or '').strip()
+              enc = item.find('enclosure')
+              body = g('{http://purl.org/rss/1.0/modules/content/}encoded') or g('description')
+              img = (enc.get('url') if enc is not None else '') or first_img(body)
+              cats = [c.text.strip().upper() for c in item.findall('category') if c.text]
+              items.append({
+                  'titolo': g('title'),
+                  'link': g('link') or g('guid'),
+                  'data': fmt_date(g('pubDate')),
+                  'immagine': img,
+                  'estratto': clean(body),
+                  'tag': cats[0] if cats else 'NEWS'
+              })
+
+          items = [i for i in items if i['titolo']]
+          with open('news.json', 'w', encoding='utf-8') as f:
+              json.dump(items, f, ensure_ascii=False, indent=2)
+          print(f"Scritti {len(items)} articoli in news.json")
+          EOF
+
+      - name: Commit news.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add news.json
+          git diff --cached --quiet || git commit -m "chore: aggiorna news.json [skip ci]"
+          git push
