@@ -23,7 +23,10 @@ jobs:
 
           FEED = 'https://terraefilmfest.substack.com/feed'
 
-          with urllib.request.urlopen(FEED, timeout=15) as r:
+          req = urllib.request.Request(FEED, headers={
+              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          })
+          with urllib.request.urlopen(req, timeout=15) as r:
               raw = r.read()
 
           root = ET.fromstring(raw)
