@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>TERRAE News Widget</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 400;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Regular.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 500;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Medium.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 600;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Semibold.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 700;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Bold.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 900;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Black.otf') format('opentype');
+  }
+</style>
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --ink-2: #1a1a1a;
+    --muted: #6b6b66;
+    --accent: oklch(0.68 0.17 35);
+    --gap: 20px;
+    --radius: 4px;
+    --visible: 4;
+    --dur: 480ms;
+  }
+
+  /* colonne calcolate dinamicamente in JS in base a larghezza widget */
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: transparent;
+    color: var(--ink);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { width: 100%; }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .pill {
+    display: inline-flex; align-items: center;
+    background: var(--ink); color: #fff;
+    padding: 8px 20px; border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    border: 0; cursor: default;
+  }
+  .nav-arrows { display: flex; gap: 8px; }
+  .arrow {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--ink); background: transparent;
+    display: grid; place-items: center;
+    cursor: pointer; color: var(--ink);
+    transition: background var(--dur), color var(--dur), opacity var(--dur);
+  }
+  .arrow:hover { background: var(--ink); color: #fff; }
+  .arrow:disabled { opacity: 0.25; }
+  .arrow svg { width: 14px; height: 14px; }
+
+  .rule { height: 1px; background: var(--ink); margin-bottom: 24px; }
+
+  .viewport { overflow: hidden; width: 100%; }
+  .track {
+    display: grid;
+    grid-auto-flow: column;
+    /* desktop: 3 card intere + ~3/4 della 4ª visibili */
+    grid-auto-columns: calc((100% - 3 * var(--gap)) / 3.8);
+    gap: var(--gap);
+    transition: transform var(--dur) cubic-bezier(.5,.05,.2,1);
+    will-change: transform;
+  }
+
+  /* tablet: 2 card intere + peek */
+  @media (max-width: 900px) {
+    .track { grid-auto-columns: calc((100% - 2 * var(--gap)) / 2.3); }
+  }
+
+  /* mobile: 1 card piena */
+  @media (max-width: 600px) {
+    .track { grid-auto-columns: 100%; }
+    .thumb { width: 100%; height: auto; aspect-ratio: 325 / 200; }
+  }
+
+  .card { display: flex; flex-direction: column; gap: 10px; }
+  .card .excerpt { margin-top: -6px; }
+
+  .thumb {
+    width: 100%;
+    aspect-ratio: 325 / 200;
+    background: #ddd;
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .thumb a { display: block; width: 100%; height: 100%; }
+  .thumb a:hover { opacity: 0.9; }
+  .thumb img, .thumb svg {
+    display: block; width: 100%; height: 100%; object-fit: cover;
+  }
+  .badge {
+    position: absolute; bottom: 8px; left: 8px;
+    background: rgba(10,10,10,0.85); color: #fff;
+    font: 500 10px/1 'AutautGrotesk', monospace;
+    padding: 4px 7px; border-radius: 2px; letter-spacing: 0.04em;
+  }
+  .date-badge {
+    position: absolute; top: 8px; left: 8px;
+    background: var(--ink); color: #fff;
+    font: 500 11px/1 'AutautGrotesk', sans-serif;
+    padding: 6px 10px; border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .kicker {
+    font: 500 10px/1 'AutautGrotesk', sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .title {
+    font-size: 20px; line-height: 1.25; font-weight: 600; color: var(--ink);
+  }
+  .title a { color: inherit; text-decoration: none; }
+  .title a:hover { text-decoration: underline; }
+
+  .excerpt {
+    font-size: 20px; line-height: 1.25; font-weight: 400; color: var(--ink);
+  }
+
+  /* actions removed */
+
+  .section-foot { margin-top: 32px; }
+
+  .loading, .error {
+    text-align: center; padding: 40px 0;
+    font: 500 12px/1 'AutautGrotesk', monospace;
+    color: var(--muted);
+  }
+  .error { color: #c00; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="section-head">
+    <span class="pill">NEWS</span>
+    <div class="nav-arrows">
+      <button class="arrow" id="prev" type="button" aria-label="Precedente" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <button class="arrow" id="next" type="button" aria-label="Successivo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="viewport">
+    <div class="track" id="track">
+      <div class="loading">Caricamento…</div>
+    </div>
+  </div>
+
+  <div class="section-foot" style="display:none">
+    <button class="pill" type="button">Vedi tutte le NEWS</button>
+  </div>
+</div>
+
+<script>
+  // ─── FONTE DATI: Substack RSS ──────────────────────────────────────────────
+  const SUBSTACK_URL = 'https://terraefilmfest.substack.com/feed';
+  // Proxy multipli: il widget prova in ordine e usa il primo che risponde.
+  const PROXIES = [
+    t => `https://api.allorigins.win/get?url=${encodeURIComponent(SUBSTACK_URL)}&t=${t}`,
+    t => `https://corsproxy.io/?url=${encodeURIComponent(SUBSTACK_URL)}&t=${t}`
+  ];
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const HUES = [18, 130, 28, 210, 280, 60, 160, 340];
+  const PATTERNS = ['diag', 'grid', 'dots'];
+
+  function placeholderSVG(hue, pattern) {
+    const bg = `oklch(0.78 0.06 ${hue})`;
+    const fg = `oklch(0.55 0.08 ${hue})`;
+    let pat = '';
+    if (pattern === 'diag')
+      pat = `<pattern id="p${hue}" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="${bg}"/><line x1="0" y1="0" x2="0" y2="14" stroke="${fg}" stroke-width="6"/></pattern>`;
+    else if (pattern === 'grid')
+      pat = `<pattern id="p${hue}" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="${bg}"/><path d="M20 0H0v20" stroke="${fg}" stroke-width="1" fill="none"/></pattern>`;
+    else
+      pat = `<pattern id="p${hue}" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="${bg}"/><circle cx="8" cy="8" r="2.2" fill="${fg}"/></pattern>`;
+    return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>${pat}</defs><rect width="400" height="300" fill="url(#p${hue})"/></svg>`;
+  }
+
+  // Formatta la data ISO/RFC in GG · MM · AAAA.
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd} · ${mm} · ${yyyy}`;
+  }
+
+  // Ricava testo pulito da un estratto HTML (rimuove tag, tronca).
+  function cleanExcerpt(html, maxLen = 120) {
+    if (!html) return '';
+    const txt = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return txt.length > maxLen ? txt.slice(0, maxLen).replace(/\s\S+$/, '') + '…' : txt;
+  }
+
+  // Estrae il primo <img> dall'HTML del contenuto.
+  function extractImage(html) {
+    if (!html) return '';
+    const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    return m ? m[1] : '';
+  }
+
+  // Parsing XML nativo tramite DOMParser.
+  function xmlToNews(xml) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    if (doc.querySelector('parsererror')) throw new Error('XML non valido');
+    const items = doc.querySelectorAll('item');
+    if (!items.length) throw new Error('Nessun articolo nel feed');
+    return Array.from(items).map((item, i) => {
+      const getText = tag => (item.querySelector(tag)?.textContent || '').trim();
+      const titolo   = getText('title');
+      const link     = getText('link') || item.querySelector('guid')?.textContent?.trim() || '';
+      const data     = formatDate(getText('pubDate'));
+      const enclosure = item.querySelector('enclosure');
+      const rawContent = getText('description') || '';
+      const immagine = enclosure?.getAttribute('url') || extractImage(rawContent) || '';
+      const estratto = cleanExcerpt(rawContent);
+      const cats = Array.from(item.querySelectorAll('category')).map(c => c.textContent.trim());
+      const tag  = cats.length ? cats[0].toUpperCase() : 'NEWS';
+      return { titolo, link, data, immagine, estratto, tag,
+        hue: HUES[i % HUES.length], pattern: PATTERNS[i % PATTERNS.length] };
+    }).filter(n => n.titolo);
+  }
+
+  const track = document.getElementById('track');
+  let NEWS = [];
+
+  function renderCards() {
+    track.innerHTML = '';
+    if (!NEWS.length) {
+      track.innerHTML = '<div class="error">Nessuna NEWS pubblicata.</div>';
+      return;
+    }
+    NEWS.forEach(n => {
+      const el = document.createElement('article');
+      el.className = 'card';
+      const thumb = n.immagine
+        ? `<img src="${n.immagine}" alt="${n.titolo}" loading="lazy">`
+        : placeholderSVG(n.hue, n.pattern);
+      const thumbWrap = n.link
+        ? `<a href="${n.link}" target="_self" style="display:block;text-decoration:none;">${thumb}</a>`
+        : thumb;
+      el.innerHTML = `
+        <div class="thumb">
+          ${thumbWrap}
+          ${n.data ? `<span class="date-badge">${n.data}</span>` : ''}
+        </div>
+        <div class="kicker">${n.tag}</div>
+        <div class="title">${n.link ? `<a href="${n.link}" target="_self">${n.titolo}</a>` : n.titolo}</div>
+        ${n.estratto ? `<div class="excerpt">${n.estratto}</div>` : ''}
+      `;
+      track.appendChild(el);
+    });
+  }
+
+  // Tenta ogni proxy in sequenza; usa il primo che risponde correttamente.
+  async function fetchWithFallback() {
+    const t = Date.now();
+    let lastErr = null;
+    for (const proxyFn of PROXIES) {
+      try {
+        const res = await fetch(proxyFn(t), { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        // allorigins restituisce { contents: '...' }, corsproxy restituisce XML diretto
+        const xml = json.contents || (typeof json === 'string' ? json : null);
+        if (!xml) throw new Error('Risposta vuota');
+        return xml;
+      } catch(e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('Tutti i proxy non disponibili');
+  }
+
+  async function loadNews() {
+    try {
+      const xml = await fetchWithFallback();
+      NEWS = xmlToNews(xml);
+    } catch(e) {
+      track.innerHTML = `<div class="error">Errore: ${e.message}</div>`;
+      return false;
+    }
+    return true;
+  }
+
+  let index = 0;
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+
+  const CARD_W_DEFAULT = 325;
+  function cardW() {
+    const first = track.querySelector('.card');
+    return first ? first.offsetWidth : CARD_W_DEFAULT;
+  }
+
+  function visibleCount() {
+    const wrapW = document.querySelector('.viewport').offsetWidth;
+    return Math.max(1, Math.floor((wrapW + 20) / (cardW() + 20)));
+  }
+
+  function update() {
+    const v = visibleCount();
+    const max = Math.max(0, NEWS.length - v);
+    if (index > max) index = max;
+    if (index < 0) index = 0;
+    track.style.transform = `translateX(${-index * (cardW() + 20)}px)`;
+    prev.disabled = index <= 0;
+    next.disabled = index >= max;
+  }
+
+  let autoplayTimer = null;
+  const mqMobile = window.matchMedia('(max-width: 600px)');
+
+  function startAutoplay() {
+    stopAutoplay();
+    if (!mqMobile.matches) return;
+    autoplayTimer = setInterval(() => {
+      const v = visibleCount();
+      const max = Math.max(0, NEWS.length - v);
+      index = index >= max ? 0 : index + 1;
+      update();
+    }, 3500);
+  }
+  function stopAutoplay() {
+    if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; }
+  }
+  function userInteracted() {
+    stopAutoplay();
+  }
+
+  prev.addEventListener('click', () => { userInteracted(); index--; update(); });
+  next.addEventListener('click', () => { userInteracted(); index++; update(); });
+  document.querySelector('.viewport').addEventListener('touchstart', userInteracted, { passive: true });
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      index = 0;
+      update();
+      startAutoplay();
+    }, 120);
+  });
+  mqMobile.addEventListener?.('change', startAutoplay);
+
+  loadNews().then(ok => { if(ok) { renderCards(); update(); startAutoplay(); } });
+
+  // Intercetta tutti i link e naviga nella finestra principale senza aprire tab
+  document.addEventListener('click', function(e) {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#')) return;
+    e.preventDefault();
+    try {
+      window.top.location.href = href;
+    } catch(err) {
+      // fallback se cross-origin
+      window.location.href = href;
+    }
+  });
+</script>
+</body>
+</html>
