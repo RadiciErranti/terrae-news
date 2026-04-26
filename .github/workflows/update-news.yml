@@ -2,10 +2,10 @@ name: Update news.json
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 * * * *'   # ogni ora
   push:
     branches: [main]
-  workflow_dispatch:
+  workflow_dispatch:        # eseguibile manualmente dal pannello Actions
 
 jobs:
   update:
@@ -16,12 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch Substack feed and generate news.json
+      - name: Fetch WordPress feed and generate news.json
         run: |
           python3 << 'EOF'
           import urllib.request, xml.etree.ElementTree as ET, json, re, html
 
-          FEED = 'https://terraefilmfest.substack.com/feed'
+          FEED = 'https://terraefilmfest.wordpress.com/feed'
 
           req = urllib.request.Request(FEED, headers={
               'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -30,6 +30,8 @@ jobs:
               raw = r.read()
 
           root = ET.fromstring(raw)
+          ns = {'content': 'http://purl.org/rss/1.0/modules/content/',
+                'media':   'http://search.yahoo.com/mrss/'}
 
           def clean(h, maxlen=120):
               t = re.sub(r'<[^>]+>', ' ', h or '')
@@ -45,7 +47,7 @@ jobs:
                   return s or ''
 
           def first_img(h):
-              m = re.search(r'<img[^>]+src=["\'](http[^"\']+)["\']', h or '')
+              m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', h or '')
               return m.group(1) if m else ''
 
           items = []
@@ -53,15 +55,15 @@ jobs:
               g = lambda t: (item.findtext(t) or '').strip()
               enc = item.find('enclosure')
               body = g('{http://purl.org/rss/1.0/modules/content/}encoded') or g('description')
-              img = (enc.get('url') if enc is not None else '') or first_img(body)
+              img  = (enc.get('url') if enc is not None else '') or first_img(body)
               cats = [c.text.strip().upper() for c in item.findall('category') if c.text]
               items.append({
-                  'titolo': g('title'),
-                  'link': g('link') or g('guid'),
-                  'data': fmt_date(g('pubDate')),
+                  'titolo':   g('title'),
+                  'link':     g('link') or g('guid'),
+                  'data':     fmt_date(g('pubDate')),
                   'immagine': img,
                   'estratto': clean(body),
-                  'tag': cats[0] if cats else 'NEWS'
+                  'tag':      cats[0] if cats else 'NEWS'
               })
 
           items = [i for i in items if i['titolo']]
@@ -72,7 +74,7 @@ jobs:
 
       - name: Commit news.json
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add news.json
           git diff --cached --quiet || git commit -m "chore: aggiorna news.json [skip ci]"
