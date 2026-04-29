@@ -224,7 +224,7 @@
       }
       cols.push(cur.trim());
       // Colonne: titolo, data, estratto, immagine, link, tag, pubblicato, testo
-      const [titolo, data, estratto, immagine, link, tag, pubblicato, testo] = cols;
+      const [titolo, data, estratto, immagine, link, tag, testo, pubblicato] = cols;
       if ((pubblicato || '').toLowerCase().trim() !== 'si') return null;
       return {
         id:       i,

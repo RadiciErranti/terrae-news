@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>TERRAE News Widget</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 400;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Regular.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 500;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Medium.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 600;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Semibold.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 700;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Bold.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 900;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Black.otf') format('opentype');
+  }
+</style>
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --ink-2: #1a1a1a;
+    --muted: #6b6b66;
+    --accent: oklch(0.68 0.17 35);
+    --gap: 20px;
+    --radius: 4px;
+    --dur: 480ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: transparent;
+    color: var(--ink);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { width: 100%; }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .pill {
+    display: inline-flex; align-items: center;
+    background: var(--ink); color: #fff;
+    padding: 8px 20px; border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    border: 0; cursor: default;
+  }
+  .nav-arrows { display: flex; gap: 8px; }
+  .arrow {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--ink); background: transparent;
+    display: grid; place-items: center;
+    cursor: pointer; color: var(--ink);
+    transition: background var(--dur), color var(--dur), opacity var(--dur);
+  }
+  .arrow:hover { background: var(--ink); color: #fff; }
+  .arrow:disabled { opacity: 0.25; }
+  .arrow svg { width: 14px; height: 14px; }
+
+  .rule { height: 1px; background: var(--ink); margin-bottom: 24px; }
+
+  .viewport { overflow: hidden; width: 100%; }
+  .track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 3 * var(--gap)) / 3.8);
+    gap: var(--gap);
+    transition: transform var(--dur) cubic-bezier(.5,.05,.2,1);
+    will-change: transform;
+  }
+
+  @media (max-width: 900px) {
+    .track { grid-auto-columns: calc((100% - 2 * var(--gap)) / 2.3); }
+  }
+  @media (max-width: 600px) {
+    .track { grid-auto-columns: 100%; }
+    .thumb { width: 100%; height: auto; aspect-ratio: 325 / 200; }
+  }
+
+  .card { display: flex; flex-direction: column; gap: 10px; cursor: pointer; }
+  .card .excerpt { margin-top: -6px; }
+  .card:hover .title { text-decoration: underline; }
+
+  .thumb {
+    width: 100%;
+    aspect-ratio: 325 / 200;
+    background: #ddd;
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .thumb img, .thumb svg {
+    display: block; width: 100%; height: 100%; object-fit: cover;
+    transition: opacity 0.2s;
+  }
+  .card:hover .thumb img { opacity: 0.88; }
+
+  .date-badge {
+    position: absolute; top: 8px; left: 8px;
+    background: var(--ink); color: #fff;
+    font: 500 11px/1 'AutautGrotesk', sans-serif;
+    padding: 6px 10px; border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .kicker {
+    font: 500 10px/1 'AutautGrotesk', sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .title {
+    font-size: 20px; line-height: 1.25; font-weight: 600; color: var(--ink);
+  }
+  .excerpt {
+    font-size: 20px; line-height: 1.25; font-weight: 400; color: var(--ink);
+  }
+
+  .section-foot { margin-top: 32px; }
+
+  .loading, .error {
+    text-align: center; padding: 40px 0;
+    font: 500 12px/1 'AutautGrotesk', monospace;
+    color: var(--muted);
+  }
+  .error { color: #c00; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="section-head">
+    <span class="pill">NEWS</span>
+    <div class="nav-arrows">
+      <button class="arrow" id="prev" type="button" aria-label="Precedente" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <button class="arrow" id="next" type="button" aria-label="Successivo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="viewport">
+    <div class="track" id="track">
+      <div class="loading">Caricamento…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── CONFIGURAZIONE ───────────────────────────────────────────────────────
+  const SHEET_ID   = '16gaKN5vvNRYcnutzrDTiOWLOYyyufm6KlvQC5VCwL2I';
+  const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=News`;
+  const DETAIL_URL = 'https://terraefilmfest.xyz/news'; // pagina Readymag con widget dettaglio
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const HUES     = [18, 130, 28, 210, 280, 60, 160, 340];
+  const PATTERNS = ['diag', 'grid', 'dots'];
+
+  function placeholderSVG(hue, pattern) {
+    const bg = `oklch(0.78 0.06 ${hue})`;
+    const fg = `oklch(0.55 0.08 ${hue})`;
+    let pat = '';
+    if (pattern === 'diag')
+      pat = `<pattern id="p${hue}" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="${bg}"/><line x1="0" y1="0" x2="0" y2="14" stroke="${fg}" stroke-width="6"/></pattern>`;
+    else if (pattern === 'grid')
+      pat = `<pattern id="p${hue}" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="${bg}"/><path d="M20 0H0v20" stroke="${fg}" stroke-width="1" fill="none"/></pattern>`;
+    else
+      pat = `<pattern id="p${hue}" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="${bg}"/><circle cx="8" cy="8" r="2.2" fill="${fg}"/></pattern>`;
+    return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>${pat}</defs><rect width="400" height="300" fill="url(#p${hue})"/></svg>`;
+  }
+
+  function csvToNews(csv) {
+    const lines = csv.trim().split('\n').slice(1);
+    return lines.map((line, i) => {
+      const cols = [];
+      let cur = '', inQ = false;
+      for (let c of line) {
+        if (c === '"') { inQ = !inQ; }
+        else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+        else cur += c;
+      }
+      cols.push(cur.trim());
+      const [titolo, data, estratto, immagine, link, tag, testo, pubblicato] = cols;
+      if ((pubblicato || '').toLowerCase().trim() !== 'si') return null;
+      return {
+        id:       i,
+        titolo:   (titolo   || '').replace(/^"|"$/g, '').trim(),
+        data:     (data     || '').replace(/^"|"$/g, '').trim(),
+        estratto: (estratto || '').replace(/^"|"$/g, '').trim(),
+        immagine: (immagine || '').replace(/^"|"$/g, '').trim(),
+        link:     (link     || '').replace(/^"|"$/g, '').trim(),
+        tag:      (tag      || 'NEWS').replace(/^"|"$/g, '').trim().toUpperCase(),
+        hue:      HUES[i % HUES.length],
+        pattern:  PATTERNS[i % PATTERNS.length]
+      };
+    }).filter(n => n && n.titolo);
+  }
+
+  function goToDetail(newsId) {
+    const url = `${DETAIL_URL}?news=${newsId}`;
+    try {
+      window.top.location.href = url;
+    } catch(e) {
+      window.location.href = url;
+    }
+  }
+
+  const track = document.getElementById('track');
+  let NEWS = [];
+
+  function renderCards() {
+    track.innerHTML = '';
+    if (!NEWS.length) {
+      track.innerHTML = '<div class="error">Nessuna NEWS pubblicata.</div>';
+      return;
+    }
+    NEWS.forEach((n, idx) => {
+      const el = document.createElement('article');
+      el.className = 'card';
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      el.addEventListener('click', () => goToDetail(idx));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') goToDetail(idx); });
+
+      const thumb = n.immagine
+        ? `<img src="${n.immagine}" alt="${n.titolo}" loading="lazy">`
+        : placeholderSVG(n.hue, n.pattern);
+
+      el.innerHTML = `
+        <div class="thumb">
+          ${thumb}
+          ${n.data ? `<span class="date-badge">${n.data}</span>` : ''}
+        </div>
+        <div class="kicker">${n.tag}</div>
+        <div class="title">${n.titolo}</div>
+        ${n.estratto ? `<div class="excerpt">${n.estratto}</div>` : ''}
+      `;
+      track.appendChild(el);
+    });
+  }
+
+  async function loadNews() {
+    try {
+      const res = await fetch(SHEET_URL + '&t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const csv = await res.text();
+      NEWS = csvToNews(csv);
+      if (!NEWS.length) throw new Error('Nessuna news pubblicata nel foglio');
+    } catch(e) {
+      track.innerHTML = `<div class="error">Errore: ${e.message}</div>`;
+      return false;
+    }
+    return true;
+  }
+
+  let index = 0;
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+
+  function cardW() {
+    const first = track.querySelector('.card');
+    return first ? first.offsetWidth : 325;
+  }
+
+  function visibleCount() {
+    const wrapW = document.querySelector('.viewport').offsetWidth;
+    return Math.max(1, Math.floor((wrapW + 20) / (cardW() + 20)));
+  }
+
+  function update() {
+    const v = visibleCount();
+    const max = Math.max(0, NEWS.length - v);
+    if (index > max) index = max;
+    if (index < 0) index = 0;
+    track.style.transform = `translateX(${-index * (cardW() + 20)}px)`;
+    prev.disabled = index <= 0;
+    next.disabled = index >= max;
+  }
+
+  let autoplayTimer = null;
+  const mqMobile = window.matchMedia('(max-width: 600px)');
+
+  function startAutoplay() {
+    stopAutoplay();
+    if (!mqMobile.matches) return;
+    autoplayTimer = setInterval(() => {
+      const v = visibleCount();
+      const max = Math.max(0, NEWS.length - v);
+      index = index >= max ? 0 : index + 1;
+      update();
+    }, 3500);
+  }
+  function stopAutoplay() {
+    if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; }
+  }
+
+  prev.addEventListener('click', e => { e.stopPropagation(); stopAutoplay(); index--; update(); });
+  next.addEventListener('click', e => { e.stopPropagation(); stopAutoplay(); index++; update(); });
+  document.querySelector('.viewport').addEventListener('touchstart', stopAutoplay, { passive: true });
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { index = 0; update(); startAutoplay(); }, 120);
+  });
+  mqMobile.addEventListener?.('change', startAutoplay);
+
+  loadNews().then(ok => { if(ok) { renderCards(); update(); startAutoplay(); } });
+</script>
+</body>
+</html>
