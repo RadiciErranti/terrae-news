@@ -212,33 +212,49 @@
     return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>${pat}</defs><rect width="400" height="300" fill="url(#p${hue})"/></svg>`;
   }
 
-  function csvToNews(csv) {
-    const lines = csv.trim().split('\n').slice(1);
-    return lines.map((line, i) => {
-      const cols = [];
-      let cur = '', inQ = false;
-      for (let c of line) {
-        if (c === '"') { inQ = !inQ; }
-        else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
-        else cur += c;
+  function parseCSV(csv) {
+    const rows = [];
+    let row = [], cur = '', inQ = false;
+    for (let i = 0; i < csv.length; i++) {
+      const c = csv[i];
+      if (inQ) {
+        if (c === '"' && csv[i+1] === '"') { cur += '"'; i++; }
+        else if (c === '"') { inQ = false; }
+        else { cur += c; }
+      } else {
+        if (c === '"') { inQ = true; }
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else if (c === '\r') {}
+        else { cur += c; }
       }
-      cols.push(cur.trim());
-      // Colonne: titolo, data, estratto, immagine, link, tag, pubblicato, testo
-      const [titolo, data, estratto, immagine, link, tag, testo, pubblicato] = cols;
-      if ((pubblicato || '').toLowerCase().trim() !== 'si') return null;
+    }
+    if (cur || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
+  function clean(v) { return (v || '').trim(); }
+
+  function csvToNews(csv) {
+    const rows = parseCSV(csv).slice(1);
+    return rows.map((cols, i) => {
+      const titolo     = clean(cols[0]);
+      const data       = clean(cols[1]);
+      const estratto   = clean(cols[2]);
+      const immagine   = clean(cols[3]);
+      const link       = clean(cols[4]);
+      const tag        = clean(cols[5]) || 'NEWS';
+      const testo      = clean(cols[6]);
+      const pubblicato = clean(cols[7]);
+      if (pubblicato.toLowerCase() !== 'si') return null;
+      if (!titolo) return null;
       return {
-        id:       i,
-        titolo:   (titolo   || '').replace(/^"|"$/g, '').trim(),
-        data:     (data     || '').replace(/^"|"$/g, '').trim(),
-        estratto: (estratto || '').replace(/^"|"$/g, '').trim(),
-        immagine: (immagine || '').replace(/^"|"$/g, '').trim(),
-        link:     (link     || '').replace(/^"|"$/g, '').trim(),
-        tag:      (tag      || 'NEWS').replace(/^"|"$/g, '').trim().toUpperCase(),
-        testo:    (testo    || '').replace(/^"|"$/g, '').trim(),
-        hue:      HUES[i % HUES.length],
-        pattern:  PATTERNS[i % PATTERNS.length]
+        id: i, titolo, data, estratto, immagine, link,
+        tag: tag.toUpperCase(), testo,
+        hue: HUES[i % HUES.length],
+        pattern: PATTERNS[i % PATTERNS.length]
       };
-    }).filter(n => n && n.titolo);
+    }).filter(Boolean);
   }
 
   let NEWS = [];
