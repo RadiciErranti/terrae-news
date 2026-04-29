@@ -193,16 +193,47 @@
     return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>${pat}</defs><rect width="400" height="300" fill="url(#p${hue})"/></svg>`;
   }
 
-  function csvToNews(csv) {
-    const lines = csv.trim().split('\n').slice(1);
-    return lines.map((line, i) => {
-      const cols = [];
-      let cur = '', inQ = false;
-      for (let c of line) {
-        if (c === '"') { inQ = !inQ; }
-        else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
-        else cur += c;
+  function parseCSVV(csv) {
+    const rows = [];
+    let row = [], cur = '', inQ = false;
+    for (let i = 0; i < csv.length; i++) {
+      const c = csv[i];
+      if (inQ) {
+        if (c === '"' && csv[i+1] === '"') { cur += '"'; i++; }
+        else if (c === '"') { inQ = false; }
+        else { cur += c; }
+      } else {
+        if (c === '"') { inQ = true; }
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else if (c === '\r') {}
+        else { cur += c; }
       }
+    }
+    if (cur || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
+  function csvToNews(csv) {
+    const rows = parseCSVV(csv).slice(1);
+    return rows.map((cols, i) => {
+      const titolo     = (cols[0]||'').trim();
+      const data       = (cols[1]||'').trim();
+      const estratto   = (cols[2]||'').trim();
+      const immagine   = (cols[3]||'').trim();
+      const link       = (cols[4]||'').trim();
+      const tag        = (cols[5]||'NEWS').trim().toUpperCase();
+      const testo      = (cols[6]||'').trim();
+      const pubblicato = (cols[7]||'').trim();
+      if (pubblicato.toLowerCase() !== 'si') return null;
+      if (!titolo) return null;
+      return {
+        id: i, titolo, data, estratto, immagine, link, tag, testo,
+        hue: HUES[i % HUES.length],
+        pattern: PATTERNS[i % PATTERNS.length]
+      };
+    }).filter(Boolean);
+  }
       cols.push(cur.trim());
       const [titolo, data, estratto, immagine, link, tag, testo, pubblicato] = cols;
       if ((pubblicato || '').toLowerCase().trim() !== 'si') return null;
