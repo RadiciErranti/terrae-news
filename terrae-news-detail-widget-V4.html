@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>TERRAE News — Dettaglio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 400;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Regular.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 500;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Medium.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 600;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Semibold.otf') format('opentype');
+  }
+</style>
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --muted: #6b6b66;
+    --accent: oklch(0.68 0.17 35);
+    --radius: 4px;
+    --detail-text-width: 680px;
+    --detail-text-pad: 24px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: transparent;
+    color: var(--ink);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { width: 100%; padding-bottom: 40px; }
+
+  /* STATO: LOADING / ERRORE / LISTA */
+  .loading, .error {
+    text-align: center; padding: 60px 0;
+    font: 500 12px/1 'AutautGrotesk', monospace;
+    color: var(--muted);
+  }
+  .error { color: #c00; }
+
+  /* LISTA NEWS (stato iniziale se nessun parametro) */
+  .news-list { display: flex; flex-direction: column; gap: 0; }
+  .list-rule { height: 1px; background: var(--ink); margin-bottom: 24px; }
+
+  /* Nascondiamo entrambe le viste finché init() non decide quale mostrare:
+     evita il flash della lista quando si arriva con ?news=N */
+  #view-list { display: none; }
+
+  .list-head {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .pill {
+    display: inline-flex; align-items: center;
+    background: var(--ink); color: #fff;
+    padding: 8px 20px; border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+  }
+
+  .list-item {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 20px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(10,10,10,0.12);
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+  }
+  .list-item:first-child { border-top: 1px solid rgba(10,10,10,0.12); }
+  .list-item:hover .list-title { text-decoration: underline; }
+
+  .list-thumb {
+    width: 120px; height: 76px;
+    border-radius: var(--radius);
+    overflow: hidden; flex-shrink: 0;
+    background: #ddd;
+  }
+  .list-thumb img, .list-thumb svg {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+
+  .list-meta { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+  .list-kicker {
+    font: 500 10px/1 'AutautGrotesk', sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .list-title {
+    font-size: 16px; line-height: 1.3; font-weight: 600;
+  }
+  .list-date {
+    font-size: 11px; color: var(--muted);
+  }
+  .list-excerpt {
+    font-size: 13px; color: var(--muted); line-height: 1.5;
+  }
+
+  /* DETTAGLIO */
+  .detail { display: none; }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: none; border: none; padding: 0;
+    cursor: pointer;
+    font: 500 11px/1 'AutautGrotesk', sans-serif;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 auto 32px;
+    max-width: var(--detail-text-width);
+    width: 100%;
+    padding: 0 var(--detail-text-pad);
+    display: flex;
+  }
+  .back-btn:hover { color: var(--ink); }
+  .back-btn svg { width: 12px; height: 12px; }
+
+  /* blocchi testo del dettaglio: tutti incolonnati nella stessa misura stretta */
+  .detail-kicker,
+  .detail-title,
+  .detail-date,
+  .detail-estratto,
+  .detail-testo,
+  .detail-rule {
+    max-width: var(--detail-text-width);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--detail-text-pad);
+    padding-right: var(--detail-text-pad);
+  }
+  .detail-rule {
+    padding-left: 0; padding-right: 0;
+    /* la riga è piena nella sua misura ma senza padding orizzontale */
+  }
+
+  .detail-rule { height: 1px; background: var(--ink); margin: 0 auto 32px; max-width: calc(var(--detail-text-width) - 2 * var(--detail-text-pad)); }
+
+  .detail-kicker {
+    font: 500 10px/1 'AutautGrotesk', sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .detail-title {
+    font-size: 40px; line-height: 1.1; font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .detail-date {
+    font-size: 12px; color: var(--muted);
+    margin-bottom: 40px;
+    letter-spacing: 0.04em;
+  }
+  /* IMMAGINE HERO con margini laterali, proporzione 900×500 */
+  .detail-img {
+    width: calc(100% - 2 * var(--detail-text-pad));
+    max-width: 900px;
+    aspect-ratio: 9 / 5;
+    border-radius: 0;
+    overflow: hidden;
+    background: #ddd;
+    margin: 0 auto 56px;
+  }
+  .detail-img img, .detail-img svg {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .detail-img img, .detail-img svg {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .detail-estratto {
+    font-size: 22px; line-height: 1.45; font-weight: 500;
+    color: var(--ink);
+    margin: 0 auto 28px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid rgba(10,10,10,0.12);
+    text-wrap: pretty;
+  }
+  /* l'estratto eredita max-width dalla regola condivisa, ma il bordo deve restare nella misura */
+  .detail-testo {
+    font-size: 17px; line-height: 1.7; font-weight: 400;
+    color: var(--ink);
+  }
+  .detail-testo p { margin-bottom: 1.2em; }
+  .detail-testo p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- LISTA (default se nessun parametro news nell'URL) -->
+  <div id="view-list">
+    <div class="list-head">
+      <span class="pill">NEWS</span>
+    </div>
+    <div class="list-rule"></div>
+    <div id="list-container">
+      <div class="loading">Caricamento…</div>
+    </div>
+  </div>
+
+  <!-- DETTAGLIO -->
+  <div id="view-detail" class="detail">
+    <button class="back-btn" id="back-btn">TUTTE LE NEWS</button>
+    <div id="detail-kicker" class="detail-kicker"></div>
+    <div class="detail-rule"></div>
+    <div id="detail-title" class="detail-title"></div>
+    <div id="detail-date" class="detail-date"></div>
+    <div id="detail-img" class="detail-img"></div>
+    <div id="detail-estratto" class="detail-estratto"></div>
+    <div id="detail-testo" class="detail-testo"></div>
+  </div>
+
+</div>
+
+<script>
+  const SHEET_ID  = '16gaKN5vvNRYcnutzrDTiOWLOYyyufm6KlvQC5VCwL2I';
+  const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=News`;
+
+  const HUES     = [18, 130, 28, 210, 280, 60, 160, 340];
+  const PATTERNS = ['diag', 'grid', 'dots'];
+
+  function placeholderSVG(hue, pattern) {
+    const bg = `oklch(0.78 0.06 ${hue})`;
+    const fg = `oklch(0.55 0.08 ${hue})`;
+    let pat = '';
+    if (pattern === 'diag')
+      pat = `<pattern id="p${hue}" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="${bg}"/><line x1="0" y1="0" x2="0" y2="14" stroke="${fg}" stroke-width="6"/></pattern>`;
+    else if (pattern === 'grid')
+      pat = `<pattern id="p${hue}" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="${bg}"/><path d="M20 0H0v20" stroke="${fg}" stroke-width="1" fill="none"/></pattern>`;
+    else
+      pat = `<pattern id="p${hue}" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="${bg}"/><circle cx="8" cy="8" r="2.2" fill="${fg}"/></pattern>`;
+    return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>${pat}</defs><rect width="400" height="300" fill="url(#p${hue})"/></svg>`;
+  }
+
+  function parseCSV(csv) {
+    const rows = [];
+    let row = [], cur = '', inQ = false;
+    for (let i = 0; i < csv.length; i++) {
+      const c = csv[i];
+      if (inQ) {
+        if (c === '"' && csv[i+1] === '"') { cur += '"'; i++; }
+        else if (c === '"') { inQ = false; }
+        else { cur += c; }
+      } else {
+        if (c === '"') { inQ = true; }
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else if (c === '\r') {}
+        else { cur += c; }
+      }
+    }
+    if (cur || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
+  function clean(v) { return (v || '').trim(); }
+
+  function csvToNews(csv) {
+    const rows = parseCSV(csv).slice(1);
+    return rows.map((cols, i) => {
+      const titolo     = clean(cols[0]);
+      const data       = clean(cols[1]);
+      const estratto   = clean(cols[2]);
+      const immagine   = clean(cols[3]);
+      const link       = clean(cols[4]);
+      const tag        = clean(cols[5]) || 'NEWS';
+      const testo      = clean(cols[6]);
+      const pubblicato = clean(cols[7]);
+      if (pubblicato.toLowerCase() !== 'si') return null;
+      if (!titolo) return null;
+      return {
+        id: i, titolo, data, estratto, immagine, link,
+        tag: tag.toUpperCase(), testo,
+        hue: HUES[i % HUES.length],
+        pattern: PATTERNS[i % PATTERNS.length]
+      };
+    }).filter(Boolean);
+  }
+
+  let NEWS = [];
+
+  // Legge il parametro ?news=N da tutte le fonti disponibili
+  function getNewsParam() {
+    // 1. URL dell'iframe stesso
+    const selfVal = new URLSearchParams(window.location.search).get('news');
+    if (selfVal !== null) return parseInt(selfVal, 10);
+
+    // 2. URL della finestra parent (stesso dominio)
+    try {
+      const topVal = new URLSearchParams(window.top.location.search).get('news');
+      if (topVal !== null) return parseInt(topVal, 10);
+    } catch(e) {}
+
+    // 3. document.referrer
+    try {
+      const refVal = new URL(document.referrer).searchParams.get('news');
+      if (refVal !== null) return parseInt(refVal, 10);
+    } catch(e) {}
+
+    return null;
+  }
+
+  function showDetail(idx) {
+    const n = NEWS[idx];
+    if (!n) return;
+
+    document.getElementById('detail-kicker').textContent = n.tag;
+    document.getElementById('detail-title').textContent  = n.titolo;
+    document.getElementById('detail-date').textContent   = n.data;
+
+    const imgEl = document.getElementById('detail-img');
+    imgEl.innerHTML = n.immagine
+      ? `<img src="${n.immagine}" alt="${n.titolo}">`
+      : placeholderSVG(n.hue, n.pattern);
+
+    document.getElementById('detail-estratto').textContent = n.estratto;
+
+    const testoEl = document.getElementById('detail-testo');
+    if (n.testo) {
+      testoEl.innerHTML = n.testo
+        .split(/\n\n+/)
+        .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    } else {
+      testoEl.innerHTML = '';
+    }
+
+    document.getElementById('view-list').style.display   = 'none';
+    document.getElementById('view-detail').style.display = 'block';
+
+    // Segnala l'altezza al parent Readymag
+    notifyHeight();
+  }
+
+  function showList() {
+    document.getElementById('view-list').style.display   = 'block';
+    document.getElementById('view-detail').style.display = 'none';
+    notifyHeight();
+
+    // Rimuove il parametro dall'URL del parent
+    try {
+      const url = new URL(window.top.location.href);
+      url.searchParams.delete('news');
+      window.top.history.replaceState({}, '', url.toString());
+    } catch(e) {}
+  }
+
+  function notifyHeight() {
+    const h = document.body.scrollHeight;
+    try { window.parent.postMessage({ type: 'terrae-height', height: h }, '*'); } catch(e) {}
+  }
+
+  function renderList(opts) {
+    const silent = opts && opts.silent;
+    const container = document.getElementById('list-container');
+    if (!NEWS.length) {
+      container.innerHTML = '<div class="error">Nessuna NEWS pubblicata.</div>';
+      return;
+    }
+    container.innerHTML = '';
+    NEWS.forEach((n, idx) => {
+      const item = document.createElement('div');
+      item.className = 'list-item';
+      item.setAttribute('role', 'button');
+      item.setAttribute('tabindex', '0');
+      item.addEventListener('click', () => showDetail(idx));
+      item.addEventListener('keydown', e => { if (e.key === 'Enter') showDetail(idx); });
+
+      const thumb = n.immagine
+        ? `<img src="${n.immagine}" alt="${n.titolo}" loading="lazy">`
+        : placeholderSVG(n.hue, n.pattern);
+
+      item.innerHTML = `
+        <div class="list-thumb">${thumb}</div>
+        <div class="list-meta">
+          <div class="list-kicker">${n.tag}</div>
+          <div class="list-title">${n.titolo}</div>
+          ${n.data     ? `<div class="list-date">${n.data}</div>` : ''}
+          ${n.estratto ? `<div class="list-excerpt">${n.estratto}</div>` : ''}
+        </div>
+      `;
+      container.appendChild(item);
+    });
+    if (!silent) notifyHeight();
+  }
+
+  document.getElementById('back-btn').addEventListener('click', showList);
+
+  async function init() {
+    const newsId = getNewsParam();
+
+    try {
+      const res = await fetch(SHEET_URL + '&t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const csv = await res.text();
+      NEWS = csvToNews(csv);
+    } catch(e) {
+      document.getElementById('view-list').style.display = 'block';
+      document.getElementById('list-container').innerHTML = `<div class="error">Errore: ${e.message}</div>`;
+      return;
+    }
+
+    // Se c'era un pendingId da postMessage, usalo
+    const id = pendingId !== null ? pendingId : newsId;
+
+    // Se ?news=N è presente e valido → vai DIRETTO al dettaglio, senza lista né back button
+    if (id !== null && NEWS[id]) {
+      document.getElementById('back-btn').style.display = 'none';
+      showDetail(id);
+      return;
+    }
+
+    // Altrimenti mostra la lista
+    document.getElementById('view-list').style.display = 'block';
+    renderList();
+  }
+
+  // Ascolta postMessage dalla pagina parent (Readymag) che invia {type:'terrae-news', id:N}
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'terrae-news' && typeof e.data.id === 'number') {
+      if (NEWS.length) {
+        document.getElementById('back-btn').style.display = 'none';
+        showDetail(e.data.id);
+      } else {
+        // Se i dati non sono ancora caricati, aspetta e riprova
+        pendingId = e.data.id;
+      }
+    }
+  });
+
+  let pendingId = null;
+
+  init();
+
+  window.addEventListener('resize', notifyHeight);
+</script>
+</body>
+</html>
+
+<style id="__om-edit-overrides">
+#detail-img [width="400"] { width: 500px !important }
+#detail-img [width="400"] { width: 200px !important }
+#detail-img [width="400"] { width: 500px !important }
+</style>
