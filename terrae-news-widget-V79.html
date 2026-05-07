@@ -351,8 +351,7 @@ function csvToNews(csv) {
 /* ── Navigazione ────────────────────────────────────────── */
 function goToDetail(id) {
   try { localStorage.setItem('terrae-news-id', String(id)); } catch(e) {}
-  const url = DETAIL_URL + '?news=' + id;
-  try { window.top.location.href = url; } catch(e) { window.location.href = url; }
+  window.location.href = DETAIL_URL;
 }
 
 /* ── Render ─────────────────────────────────────────────── */
