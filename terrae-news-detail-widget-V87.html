@@ -335,8 +335,17 @@
       aspect-ratio: 16 / 7;
     }
   }
-  /* Layout fluido: nessuna scala fissa */
-  .scale-root { width: 100%; }
+  /* ── SCALA DINAMICA (replica zoom Readymag) ─────────── */
+  .scale-root {
+    width: 1440px;
+    transform-origin: top left;
+  }
+  @media (max-width: 600px) {
+    .scale-root {
+      width: 100%;
+      transform: none !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -450,7 +459,7 @@
   /* ── REVEAL ──────────────────────────────────────────── */
   function reveal() {
     document.getElementById('wrap').style.visibility = 'visible';
-    notifyHeight();
+    applyScale();
   }
 
   /* ── RICERCA PER ID ──────────────────────────────────── */
@@ -630,17 +639,27 @@
     applyId(pendingId);
   }
 
-  window.addEventListener('resize', notifyHeight);
+  /* ── SCALA DINAMICA ──────────────────────────────────────── */
+  const DESIGN_WIDTH = 1440;
+  const MOBILE_BP    = 600;
 
-  /* ── RESIZE OBSERVER ─────────────────────────────────────
-     Osserva il contenitore e aggiorna l'altezza dell'iframe
-     ogni volta che il layout cambia (testo a capo, apertura
-     dettaglio, ecc.) indipendentemente dalla causa.
-  ────────────────────────────────────────────────────────── */
-  if (window.ResizeObserver) {
-    const ro = new ResizeObserver(() => notifyHeight());
-    ro.observe(document.getElementById('wrap'));
+  function applyScale() {
+    const vw   = window.innerWidth || document.documentElement.clientWidth;
+    const root = document.getElementById('scale-root');
+    if (vw <= MOBILE_BP) {
+      root.style.transform = '';
+      root.style.width = '100%';
+      document.body.style.height = '';
+    } else {
+      root.style.width = DESIGN_WIDTH + 'px';
+      const scale = vw / DESIGN_WIDTH;
+      root.style.transform = `scale(${scale})`;
+      document.body.style.height = Math.ceil(root.scrollHeight * scale) + 'px';
+    }
+    notifyHeight();
   }
+
+  window.addEventListener('resize', applyScale);
 
   setTimeout(init, 300);
 </script>
