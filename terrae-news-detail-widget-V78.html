@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>TERRAE News Detail Widget V75</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 400;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Regular.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 500;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Medium.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'AutautGrotesk';
+    font-weight: 600;
+    src: url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Semibold.otf') format('opentype');
+  }
+
+  /* ── VARIABILI ─────────────────────────────────────── */
+  :root {
+    --ink:    rgba(23, 23, 23, 1);
+    --muted:  rgba(0, 0, 0, 0.4);
+    --pad:    365px;
+    --pad-sm: 20px;
+  }
+
+  /* ── RESET ──────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  p, h1, h2, h3 { margin: 0; padding: 0; }
+
+  html { width: 100%; }
+  body {
+    background: transparent;
+    color: var(--ink);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-width: 320px;
+    overflow: visible;
+  }
+
+  /* ── CONTENITORE PRINCIPALE ─────────────────────────── */
+  .wrap {
+    width: 100%;
+    padding-bottom: 60px;
+    visibility: hidden;
+  }
+
+  /* ── STATO ──────────────────────────────────────────── */
+  #view-list   { display: none; }
+  #view-detail { display: none; }
+
+  /* ── MESSAGGI ───────────────────────────────────────── */
+  .msg {
+    text-align: center;
+    padding: 60px var(--pad);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--muted);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .msg.error { color: #c00; }
+
+  /* ── VISTA LISTA ────────────────────────────────────── */
+  .list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--pad);
+    margin-bottom: 16px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    background: var(--ink);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+
+  .list-item {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 20px;
+    padding: 20px var(--pad);
+    cursor: pointer;
+    color: inherit;
+  }
+  .list-item:hover .list-title { text-decoration: underline; }
+
+  .list-thumb {
+    width: 120px;
+    height: 76px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #e0e0e0;
+  }
+  .list-thumb img,
+  .list-thumb svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .list-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+  }
+  .list-kicker {
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .list-date {
+    font-size: 11px;
+    line-height: 1;
+    color: var(--muted);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .list-title {
+    font-size: 18px;
+    line-height: 25px;
+    font-weight: 600;
+    color: var(--ink);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .list-excerpt {
+    font-size: 18px;
+    line-height: 25px;
+    font-weight: 400;
+    color: var(--muted);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+
+  /* ── VISTA DETTAGLIO ────────────────────────────────── */
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 32px;
+    padding: 0 var(--pad);
+    width: 100%;
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .back-btn:hover { color: var(--ink); }
+  .back-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+  /* Tutti gli elementi del detail condividono il padding laterale */
+  .detail-kicker,
+  .detail-date,
+  .detail-title,
+  .detail-estratto {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: var(--pad);
+    padding-right: var(--pad);
+  }
+
+  .detail-kicker {
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .detail-date {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 30px;
+    color: var(--muted);
+    letter-spacing: 0;
+    margin-bottom: 4px;
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .detail-title {
+    font-size: 30px;
+    line-height: 35px;
+    font-weight: 600;
+    color: rgba(23, 23, 23, 1);
+    margin-bottom: 16px;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .detail-img {
+    width: 100%;
+    padding: 0;
+    margin-bottom: 40px;
+    overflow: hidden;
+  }
+  .detail-img img,
+  .detail-img svg {
+    width: 100%;
+    aspect-ratio: 1130 / 460;
+    object-fit: cover;
+    display: block;
+  }
+  .detail-estratto {
+    font-size: 18px;
+    line-height: 25px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 40px;
+    text-wrap: pretty;
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+
+  /* Testo corpo: centrato a 710px, allineato con il testo Readymag */
+  .detail-testo {
+    width: 710px;
+    max-width: calc(100% - (var(--pad) * 2));
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 18px;
+    line-height: 25px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 1);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .detail-testo p { margin-bottom: 1.2em; }
+  .detail-testo p:last-child { margin-bottom: 0; }
+
+  .detail-back-link {
+    width: 710px;
+    max-width: calc(100% - (var(--pad) * 2));
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2.4em;
+  }
+  .back-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+  .back-link-btn:hover { color: var(--ink); }
+
+  /* ── MOBILE ≤ 480px ─────────────────────────────────── */
+  @media (max-width: 480px) {
+    .list-head,
+    .list-item,
+    .back-btn,
+    .detail-kicker,
+    .detail-date,
+    .detail-title,
+    .detail-estratto {
+      padding-left: var(--pad-sm);
+      padding-right: var(--pad-sm);
+    }
+
+    .detail-title {
+      font-size: 26px;
+      line-height: 32px;
+    }
+
+    .detail-estratto {
+      font-size: 16px;
+      line-height: 24px;
+    }
+
+    .detail-img {
+      padding: 0;
+    }
+
+    .detail-testo {
+      width: 100%;
+      max-width: 100%;
+      padding-left: var(--pad-sm);
+      padding-right: var(--pad-sm);
+      font-size: 16px;
+      line-height: 24px;
+    }
+
+    .detail-back-link {
+      width: 100%;
+      max-width: 100%;
+      padding-left: var(--pad-sm);
+      padding-right: var(--pad-sm);
+    }
+
+    .list-item {
+      grid-template-columns: 1fr;
+    }
+
+    .list-thumb {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 325 / 200;
+    }
+  }
+  /* ── SCALA DINAMICA (replica zoom Readymag) ─────────── */
+  .scale-root {
+    width: 1440px;
+    transform-origin: top left;
+    /* il valore di transform viene impostato via JS */
+  }
+</style>
+</head>
+<body>
+
+<div class="scale-root" id="scale-root">
+<div class="wrap" id="wrap">
+
+  <!-- VISTA LISTA -->
+  <div id="view-list">
+    <div class="list-head">
+      <span class="pill">NEWS</span>
+    </div>
+    <div id="list-container"></div>
+  </div>
+
+  <!-- VISTA DETTAGLIO -->
+  <div id="view-detail">
+    <button class="back-btn" id="back-btn">
+      <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7.5 1.5L3 6l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Tutte le news
+    </button>
+    <div id="detail-kicker"   class="detail-kicker"></div>
+    <div id="detail-date"     class="detail-date"></div>
+    <div id="detail-title"    class="detail-title"></div>
+    <div id="detail-estratto" class="detail-estratto"></div>
+    <div id="detail-img"      class="detail-img"></div>
+    <div id="detail-testo"      class="detail-testo"></div>
+    <div id="detail-back-link"  class="detail-back-link"></div>
+  </div>
+
+</div>
+</div><!-- /scale-root -->
+
+<script>
+  const SHEET_ID  = '16gaKN5vvNRYcnutzrDTiOWLOYyyufm6KlvQC5VCwL2I';
+  const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=News`;
+  const CACHE_KEY = 'terrae-news-cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const HUES     = [18, 130, 28, 210, 280, 60, 160, 340];
+  const PATTERNS = ['diag', 'grid', 'dots'];
+
+  /* ── PLACEHOLDER SVG ─────────────────────────────────── */
+  function placeholderSVG(hue, pattern) {
+    const bg = `oklch(0.78 0.06 ${hue})`;
+    const fg = `oklch(0.55 0.08 ${hue})`;
+    let pat = '';
+    if (pattern === 'diag')
+      pat = `<pattern id="p${hue}" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="${bg}"/><line x1="0" y1="0" x2="0" y2="14" stroke="${fg}" stroke-width="6"/></pattern>`;
+    else if (pattern === 'grid')
+      pat = `<pattern id="p${hue}" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="${bg}"/><path d="M20 0H0v20" stroke="${fg}" stroke-width="1" fill="none"/></pattern>`;
+    else
+      pat = `<pattern id="p${hue}" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="${bg}"/><circle cx="8" cy="8" r="2.2" fill="${fg}"/></pattern>`;
+    return `<svg viewBox="0 0 1130 460" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>${pat}</defs><rect width="1130" height="460" fill="url(#p${hue})"/></svg>`;
+  }
+
+  /* ── CSV PARSER ──────────────────────────────────────── */
+  function parseCSV(csv) {
+    const rows = [];
+    let row = [], cur = '', inQ = false;
+    for (let i = 0; i < csv.length; i++) {
+      const c = csv[i];
+      if (inQ) {
+        if (c === '"' && csv[i + 1] === '"') { cur += '"'; i++; }
+        else if (c === '"') { inQ = false; }
+        else { cur += c; }
+      } else {
+        if (c === '"') { inQ = true; }
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else if (c !== '\r') { cur += c; }
+      }
+    }
+    if (cur || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
+  function clean(v) { return (v || '').trim(); }
+
+  function csvToNews(csv) {
+    return parseCSV(csv).slice(1).map((cols, i) => {
+      const pubblicato = clean(cols[6]);
+      const titolo     = clean(cols[1]);
+      if (pubblicato.toLowerCase() !== 'si' || !titolo) return null;
+      return {
+        id:       clean(cols[7]) || String(i),
+        data:     clean(cols[0]),
+        titolo,
+        estratto: clean(cols[2]),
+        immagine: clean(cols[3]),
+        tag:      (clean(cols[4]) || 'NEWS').toUpperCase(),
+        testo:    clean(cols[5]),
+        hue:      HUES[i % HUES.length],
+        pattern:  PATTERNS[i % PATTERNS.length]
+      };
+    }).filter(Boolean);
+  }
+
+  /* ── STATE ───────────────────────────────────────────── */
+  let NEWS      = [];
+  let pendingId = null;
+
+  /* ── ALTEZZA IFRAME ──────────────────────────────────── */
+  function notifyHeight() {
+    const h = document.getElementById('wrap').scrollHeight;
+    try { window.parent.postMessage({ type: 'terrae-height', height: h }, '*'); } catch(e) {}
+  }
+
+  /* ── REVEAL ──────────────────────────────────────────── */
+  function reveal() {
+    document.getElementById('wrap').style.visibility = 'visible';
+    applyScale();
+  }
+
+  /* ── RICERCA PER ID ──────────────────────────────────── */
+  function findById(id) {
+    const byId = NEWS.find(n => n.id === String(id));
+    if (byId) return byId;
+    const i = parseInt(id, 10);
+    return isNaN(i) ? null : (NEWS[i] || null);
+  }
+
+  /* ── MARKDOWN INLINE ─────────────────────────────────── */
+  function parseInline(text) {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<span style="font-weight:600">$1</span>')
+      .replace(/\*([^*]+?)\*/g, '<span style="font-weight:500">$1</span>');
+  }
+
+  /* ── VISTA DETTAGLIO ─────────────────────────────────── */
+  function showDetail(id) {
+    const n = findById(id);
+    if (!n) return;
+
+    document.getElementById('detail-kicker').textContent   = n.tag;
+    document.getElementById('detail-date').textContent     = n.data;
+    document.getElementById('detail-title').textContent    = n.titolo;
+    document.getElementById('detail-estratto').textContent = n.estratto;
+
+    const imgEl = document.getElementById('detail-img');
+    imgEl.innerHTML = n.immagine
+      ? `<img src="${n.immagine}" alt="${n.titolo}" loading="lazy">`
+      : placeholderSVG(n.hue, n.pattern);
+
+    const testo = n.testo
+      ? n.testo.split(/\n\n+/).map(p =>
+          `<p>${parseInline(p.replace(/\n/g, '<br>'))}</p>`
+        ).join('')
+      : '';
+
+    document.getElementById('detail-testo').innerHTML = testo;
+
+    const backLink = document.getElementById('detail-back-link');
+    backLink.innerHTML = `<button class="back-link-btn" id="back-link-btn">← Vedi tutte le news</button>`;
+    document.getElementById('back-link-btn').addEventListener('click', showList);
+
+    document.getElementById('view-list').style.display   = 'none';
+    document.getElementById('view-detail').style.display = 'block';
+    reveal();
+
+    try { window.top.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e) {
+      try { window.parent.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e2) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }
+
+  /* ── TORNA ALLA LISTA ────────────────────────────────── */
+  function showList() {
+    try { localStorage.removeItem('terrae-news-id'); } catch(e) {}
+    try {
+      window.top.location.href = 'https://terraefilmfest.xyz/news';
+    } catch(e) {
+      window.location.href = 'https://terraefilmfest.xyz/news';
+    }
+  }
+
+  /* ── RENDER LISTA ────────────────────────────────────── */
+  function renderList() {
+    const container = document.getElementById('list-container');
+    if (!NEWS.length) {
+      container.innerHTML = '<div class="msg error">Nessuna news pubblicata.</div>';
+      return;
+    }
+    container.innerHTML = '';
+    NEWS.forEach(n => {
+      const item = document.createElement('div');
+      item.className = 'list-item';
+      item.setAttribute('role', 'button');
+      item.setAttribute('tabindex', '0');
+      item.addEventListener('click', () => showDetail(n.id));
+      item.addEventListener('keydown', e => { if (e.key === 'Enter') showDetail(n.id); });
+
+      const thumb = n.immagine
+        ? `<img src="${n.immagine}" alt="${n.titolo}" loading="lazy">`
+        : placeholderSVG(n.hue, n.pattern);
+
+      item.innerHTML = `
+        <div class="list-thumb">${thumb}</div>
+        <div class="list-meta">
+          <div class="list-kicker">${n.tag}</div>
+          ${n.data     ? `<div class="list-date">${n.data}</div>` : ''}
+          <div class="list-title">${n.titolo}</div>
+          ${n.estratto ? `<div class="list-excerpt">${n.estratto}</div>` : ''}
+        </div>
+      `;
+      container.appendChild(item);
+    });
+  }
+
+  /* ── APPLICA ID ──────────────────────────────────────── */
+  function applyId(id) {
+    try { localStorage.removeItem('terrae-news-id'); } catch(e) {}
+    const n = id !== null ? findById(id) : null;
+    if (n) {
+      document.getElementById('back-btn').style.display = 'none';
+      showDetail(n.id);
+    } else {
+      document.getElementById('view-list').style.display = 'block';
+      renderList();
+      reveal();
+    }
+  }
+
+  /* ── INIT ────────────────────────────────────────────── */
+  document.getElementById('back-btn').addEventListener('click', showList);
+
+  async function init() {
+    /* 1. localStorage */
+    try {
+      const stored = localStorage.getItem('terrae-news-id');
+      if (stored !== null) pendingId = stored;
+    } catch(e) {}
+
+    /* 2. URL proprio */
+    if (pendingId === null) {
+      try {
+        const v = new URLSearchParams(window.location.search).get('news');
+        if (v !== null) {
+          pendingId = v;
+          try { window.history.replaceState({}, '', window.location.pathname); } catch(e) {}
+        }
+      } catch(e) {}
+    }
+
+    /* 3. URL parent (Readymag) */
+    if (pendingId === null) {
+      try {
+        const v = new URLSearchParams(window.top.location.search).get('news');
+        if (v !== null) {
+          pendingId = v;
+          try { window.top.history.replaceState({}, '', window.top.location.pathname); } catch(e) {}
+        }
+      } catch(e) {}
+    }
+
+    /* 4. Cache locale */
+    let fromCache = false;
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const { ts, data } = JSON.parse(raw);
+        if (Date.now() - ts < CACHE_TTL && data && data.length) {
+          NEWS = data;
+          fromCache = true;
+        }
+      }
+    } catch(e) {}
+
+    /* 5. Fetch foglio */
+    if (!fromCache) {
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch(SHEET_URL + '&t=' + Date.now(), { cache: 'no-store', signal: ctrl.signal });
+        clearTimeout(t);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        NEWS = csvToNews(await res.text());
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: NEWS })); } catch(e) {}
+      } catch(e) {
+        document.getElementById('view-list').style.display = 'block';
+        document.getElementById('list-container').innerHTML =
+          `<div class="msg error">Errore: ${e.name === 'AbortError' ? 'timeout — foglio non raggiungibile' : e.message}</div>`;
+        reveal();
+        return;
+      }
+    }
+
+    applyId(pendingId);
+  }
+
+  /* ── SCALA DINAMICA ──────────────────────────────────── */
+  const DESIGN_WIDTH = 1440;
+
+  function applyScale() {
+    const vw = window.innerWidth || document.documentElement.clientWidth;
+    const scale = vw / DESIGN_WIDTH;
+    const root = document.getElementById('scale-root');
+    root.style.transform = `scale(${scale})`;
+    // aggiusta l'altezza del body perché transform non occupa spazio nel layout
+    document.body.style.height = Math.ceil(root.scrollHeight * scale) + 'px';
+    notifyHeight();
+  }
+
+  window.addEventListener('resize', applyScale);
+
+  setTimeout(init, 300);
+</script>
+</body>
+</html>
