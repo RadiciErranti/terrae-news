@@ -335,8 +335,14 @@
       aspect-ratio: 16 / 7;
     }
   }
-  /* Layout fluido: nessuna scala fissa */
-  .scale-root { width: 100%; }
+  /* ── SCALA DINAMICA (replica zoom Readymag) ─────────── */
+  .scale-root {
+    width: 1770px;
+    transform-origin: top left;
+  }
+  @media (max-width: 600px) {
+    .scale-root { width: 100%; transform: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -444,6 +450,7 @@
   /* ── REVEAL ──────────────────────────────────────────── */
   function reveal() {
     document.getElementById('wrap').style.visibility = 'visible';
+    applyScale();
   }
 
   /* ── RICERCA PER ID ──────────────────────────────────── */
@@ -622,6 +629,27 @@
 
     applyId(pendingId);
   }
+
+  /* ── SCALA DINAMICA ──────────────────────────────────────── */
+  const DESIGN_WIDTH = 1770;
+  const MOBILE_BP    = 600;
+
+  function applyScale() {
+    const vw   = window.innerWidth || document.documentElement.clientWidth;
+    const root = document.getElementById('scale-root');
+    if (vw <= MOBILE_BP) {
+      root.style.transform = '';
+      root.style.width = '100%';
+      document.body.style.height = '';
+    } else {
+      root.style.width = DESIGN_WIDTH + 'px';
+      const scale = vw / DESIGN_WIDTH;
+      root.style.transform = `scale(${scale})`;
+      document.body.style.height = Math.ceil(root.scrollHeight * scale) + 'px';
+    }
+  }
+
+  window.addEventListener('resize', applyScale);
 
   setTimeout(init, 300);
 </script>
