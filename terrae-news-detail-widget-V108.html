@@ -144,7 +144,7 @@
     margin-top: 4px;
   }
   .list-title {
-    font-size: 18px;
+    font-size: 17px;
     line-height: 22px;
     font-weight: 600;
     color: var(--ink);
@@ -152,7 +152,7 @@
     margin-top: 4px;
   }
   .list-excerpt {
-    font-size: 18px;
+    font-size: 17px;
     line-height: 22px;
     font-weight: 400;
     color: var(--muted);
@@ -238,7 +238,7 @@
     display: block;
   }
   .detail-estratto {
-    font-size: 18px;
+    font-size: 17px;
     line-height: 25px;
     font-weight: 500;
     color: var(--ink);
@@ -253,7 +253,7 @@
     max-width: calc(100% - (var(--pad) * 2));
     margin-left: auto;
     margin-right: auto;
-    font-size: 18px;
+    font-size: 17px;
     line-height: 25px;
     font-weight: 400;
     color: rgba(0, 0, 0, 1);
@@ -694,11 +694,6 @@
   window.addEventListener('resize', applyScale);
 
   setTimeout(init, 300);
-
-  // Segnala al parent che il widget è pronto a ricevere l'ID
-  window.addEventListener('load', () => {
-    window.parent.postMessage({ type: 'terrae-widget-ready' }, '*');
-  });
 
   // Riceve l'ID via postMessage dallo script Readymag
   window.addEventListener('message', (e) => {
