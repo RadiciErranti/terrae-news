@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>TERRAE News Widget V115</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  @font-face { font-family:'AutautGrotesk'; font-weight:400; src:url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Regular.otf') format('opentype'); }
+  @font-face { font-family:'AutautGrotesk'; font-weight:500; src:url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Medium.otf') format('opentype'); }
+  @font-face { font-family:'AutautGrotesk'; font-weight:600; src:url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Semibold.otf') format('opentype'); }
+  @font-face { font-family:'AutautGrotesk'; font-weight:700; src:url('https://radicierranti.github.io/terrae-assets/AutautGrotesk-Bold.otf') format('opentype'); }
+
+  :root {
+    --ink:    #0a0a0a;
+    --muted:  #6b6b66;
+    --line:   rgba(10,10,10,0.16);
+    --gap:    20px;
+    --radius: 4px;
+    --dur:    320ms;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: transparent;
+    color: var(--ink);
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── WRAPPER ─────────────────────────────────────────────── */
+  .wrap { width: 100%; padding: 0; }
+  @media (max-width: 600px) { .wrap { padding: 0 20px; } }
+
+  /* ── HEADER ──────────────────────────────────────────────── */
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    background: var(--ink);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 0;
+    letter-spacing: 0.05em;
+    font-family: 'AutautGrotesk', system-ui, sans-serif;
+  }
+
+  .rule { height: 1px; background: var(--ink); margin-bottom: 28px; }
+
+  /* ── GRIGLIA UNIFORME ────────────────────────────────────── */
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    column-gap: var(--gap);
+    row-gap: 36px;
+  }
+
+  /* ── CARD ────────────────────────────────────────────────── */
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .thumb {
+    width: 100%;
+    aspect-ratio: 325 / 200;
+    background: #ddd;
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .thumb img, .thumb svg {
+    display: block;
+    width: 100.5%;
+    height: 100.5%;
+    margin: -0.25%;
+    max-width: none;
+    object-fit: cover;
+    border-radius: inherit;
+    transition: opacity 0.2s;
+  }
+  .card:hover .thumb img { opacity: 0.88; }
+
+  .date-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: var(--ink);
+    color: #fff;
+    font: 500 11px/1 'AutautGrotesk', sans-serif;
+    padding: 6px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .card-text { display: flex; flex-direction: column; gap: 4px; }
+
+  .kicker {
+    font: 500 10px/1 'AutautGrotesk', sans-serif;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .title {
+    font-size: 17px;
+    line-height: 21px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .excerpt {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /* ── PAGINAZIONE ─────────────────────────────────────────── */
+  .pager {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 40px;
+  }
+  .pg-num {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: transparent;
+    font: 600 13px 'AutautGrotesk', sans-serif;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background var(--dur), color var(--dur), border-color var(--dur);
+  }
+  .pg-num:hover { border-color: var(--ink); }
+  .pg-num.is-active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .pg-ellipsis {
+    width: 24px;
+    text-align: center;
+    color: var(--muted);
+    font: 500 13px 'AutautGrotesk', sans-serif;
+  }
+  .pg-btn {
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--ink);
+    background: transparent;
+    font: 600 12px 'AutautGrotesk', sans-serif;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background var(--dur), color var(--dur), opacity var(--dur);
+  }
+  .pg-btn:hover:not(:disabled) { background: var(--ink); color: #fff; }
+  .pg-btn:disabled { opacity: 0.25; cursor: default; }
+
+  .loading, .error {
+    text-align: center;
+    padding: 40px 0;
+    font: 500 12px/1 'AutautGrotesk', monospace;
+    color: var(--muted);
+  }
+  .error { color: #c00; }
+
+  /* ── MOBILE ≤600px ───────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .news-grid { row-gap: 32px; }
+    .pg-btn { padding: 0 12px; }
+  }
+
+  /* ── iPhone SE ≤360px ────────────────────────────────────── */
+  @media (max-width: 360px) {
+    .pill { padding: 6px 14px; font-size: 11px; }
+  }
+
+  /* ── SCALE-ROOT NEUTRO (nessuno scaling, layout fluido) ─── */
+  .scale-root { width: 100%; }
+</style>
+</head>
+<body>
+<div class="scale-root" id="scale-root">
+<div class="wrap">
+  <div class="section-head">
+    <span class="pill">NEWS</span>
+  </div>
+  <div class="rule"></div>
+
+  <div class="news-grid" id="news-grid">
+    <div class="loading">Caricamento…</div>
+  </div>
+
+  <div id="pager"></div>
+</div>
+</div><!-- /scale-root -->
+
+<script>
+const SHEET_ID   = '16gaKN5vvNRYcnutzrDTiOWLOYyyufm6KlvQC5VCwL2I';
+const SHEET_URL  = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=News';
+const DETAIL_URL = 'https://terraefilmfest.xyz/news';
+const HUES       = [18,130,28,210,280,60,160,340];
+const PATTERNS   = ['diag','grid','dots'];
+const PAGE_SIZE  = 12;
+
+function placeholderSVG(hue, pat) {
+  const bg = 'oklch(0.78 0.06 ' + hue + ')';
+  const fg = 'oklch(0.55 0.08 ' + hue + ')';
+  let p = '';
+  if (pat === 'diag')
+    p = '<pattern id="p" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="' + bg + '"/><line x1="0" y1="0" x2="0" y2="14" stroke="' + fg + '" stroke-width="6"/></pattern>';
+  else if (pat === 'grid')
+    p = '<pattern id="p" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="' + bg + '"/><path d="M20 0H0v20" stroke="' + fg + '" stroke-width="1" fill="none"/></pattern>';
+  else
+    p = '<pattern id="p" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="' + bg + '"/><circle cx="8" cy="8" r="2.2" fill="' + fg + '"/></pattern>';
+  return '<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>' + p + '</defs><rect width="400" height="300" fill="url(#p)"/></svg>';
+}
+
+function parseCSV(csv) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < csv.length; i++) {
+    const c = csv[i];
+    if (inQ) {
+      if (c === '"' && csv[i+1] === '"') { cur += '"'; i++; }
+      else if (c === '"') { inQ = false; }
+      else { cur += c; }
+    } else {
+      if (c === '"') { inQ = true; }
+      else if (c === ',') { row.push(cur); cur = ''; }
+      else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else if (c === '\r') {}
+      else { cur += c; }
+    }
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+function csvToNews(csv) {
+  return parseCSV(csv).slice(1).map((cols, i) => {
+    const titolo     = (cols[1] || '').trim();
+    const pubblicato = (cols[6] || '').trim().toLowerCase();
+    if (pubblicato !== 'si' || !titolo) return null;
+    return {
+      id: i,
+      titolo,
+      data:     (cols[0] || '').trim(),
+      estratto: (cols[2] || '').trim(),
+      immagine: (cols[3] || '').trim(),
+      tag:      ((cols[4] || 'NEWS').trim()).toUpperCase(),
+      testo:    (cols[5] || '').trim(),
+      hue:      HUES[i % HUES.length],
+      pattern:  PATTERNS[i % PATTERNS.length]
+    };
+  }).filter(Boolean);
+}
+
+function goToDetail(id) {
+  try { localStorage.setItem('terrae-news-id', String(id)); } catch(e) {}
+  try { window.top.location.href = DETAIL_URL; } catch(e) { window.location.href = DETAIL_URL; }
+}
+
+const gridEl  = document.getElementById('news-grid');
+const pagerEl = document.getElementById('pager');
+let NEWS = [];
+let page = 0;
+
+function cardHTML(n, idx) {
+  const img = n.immagine
+    ? '<img src="' + n.immagine + '" alt="' + n.titolo + '" loading="lazy">'
+    : placeholderSVG(n.hue, n.pattern);
+  const badge = n.data ? '<span class="date-badge">' + n.data + '</span>' : '';
+  return '<article class="card" role="button" tabindex="0" data-idx="' + idx + '">'
+    + '<div class="thumb">' + img + badge + '</div>'
+    + '<div class="card-text">'
+      + '<div class="kicker">' + n.tag + '</div>'
+      + '<div class="title">' + n.titolo + '</div>'
+      + (n.estratto ? '<div class="excerpt">' + n.estratto + '</div>' : '')
+    + '</div></article>';
+}
+
+function bindClicks(scope) {
+  scope.querySelectorAll('[data-idx]').forEach(el => {
+    const idx = parseInt(el.getAttribute('data-idx'), 10);
+    el.addEventListener('click', () => goToDetail(idx));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') goToDetail(idx); });
+  });
+}
+
+function totalPages() { return Math.max(1, Math.ceil(NEWS.length / PAGE_SIZE)); }
+
+function pageNumbers(tp, cur) {
+  if (tp <= 7) return Array.from({length: tp}, (_, i) => i);
+  const set = new Set([0, 1, tp - 2, tp - 1, cur - 1, cur, cur + 1]);
+  const list = [...set].filter(i => i >= 0 && i < tp).sort((a, b) => a - b);
+  const out = [];
+  let prev = -1;
+  list.forEach(i => {
+    if (prev !== -1 && i - prev > 1) out.push('…');
+    out.push(i);
+    prev = i;
+  });
+  return out;
+}
+
+function renderPager() {
+  const tp = totalPages();
+  if (tp <= 1) { pagerEl.innerHTML = ''; return; }
+  let html = '<div class="pager">';
+  html += '<button class="pg-btn" data-pg="prev"' + (page === 0 ? ' disabled' : '') + '>Precedente</button>';
+  pageNumbers(tp, page).forEach(i => {
+    if (i === '…') html += '<span class="pg-ellipsis">…</span>';
+    else html += '<button class="pg-num' + (i === page ? ' is-active' : '') + '" data-pg="' + i + '">' + (i + 1) + '</button>';
+  });
+  html += '<button class="pg-btn" data-pg="next"' + (page >= tp - 1 ? ' disabled' : '') + '>Successiva</button>';
+  html += '</div>';
+  pagerEl.innerHTML = html;
+
+  pagerEl.querySelectorAll('[data-pg]').forEach(b => {
+    if (b.hasAttribute('disabled')) return;
+    b.addEventListener('click', () => {
+      const v = b.getAttribute('data-pg');
+      if (v === 'prev') page = Math.max(0, page - 1);
+      else if (v === 'next') page = Math.min(tp - 1, page + 1);
+      else page = parseInt(v, 10);
+      renderGrid();
+      try { document.getElementById('scale-root').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e) {}
+    });
+  });
+}
+
+function renderGrid() {
+  if (!NEWS.length) {
+    gridEl.innerHTML = '<div class="error">Nessuna news pubblicata.</div>';
+    pagerEl.innerHTML = '';
+    return;
+  }
+  const start = page * PAGE_SIZE;
+  const slice = NEWS.slice(start, start + PAGE_SIZE);
+  gridEl.innerHTML = slice.map((n, i) => cardHTML(n, start + i)).join('');
+  bindClicks(gridEl);
+  renderPager();
+}
+
+async function loadNews() {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(SHEET_URL + '&t=' + Date.now(), { cache: 'no-store', signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    NEWS = csvToNews(await res.text());
+    if (!NEWS.length) throw new Error('Nessuna news con "si" nella colonna Pubblicato');
+  } catch(e) {
+    gridEl.innerHTML = '<div class="error">Errore: ' + (e.name === 'AbortError' ? 'Timeout' : e.message) + '</div>';
+    return false;
+  }
+  return true;
+}
+
+loadNews().then(ok => { if (ok) renderGrid(); });
+</script>
+</body>
+</html>
